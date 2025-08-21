@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RTC Live — 1:1 Calls</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+  <!-- Login Modal -->
+  <div id="loginModal" class="modal">
+    <div class="modal-content">
+      <h2>Choose a username</h2>
+      <input id="usernameInput" type="text" placeholder="Enter a unique username" maxlength="20"/>
+      <button id="joinBtn" class="btn primary joinBtn">Join</button>
+      <p id="loginError" class="error"></p>
+    </div>
+  </div>
+
+  <!-- Main Layout -->
+  <div class="container">
+    <!-- Left: User List Panel -->
+    <aside id="userPanel">
+      <h2>Active Users</h2>
+      <ul id="userList"></ul>
+    </aside>
+
+    <!-- Center: Call Area -->
+    <main id="callArea">
+      <h2>Call Area</h2>
+
+      <!-- Video region -->
+      <div id="videoRegion">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
+
+      <!-- Control Bar -->
+      <div id="controls">
+        <button id="endCallBtn" class="btn end">End Call</button>
+        <button id="muteBtn" class="btn mute">Mute</button>
+        <button id="speakerBtn" class="btn speaker">Speaker</button>
+        <button id="audioModeBtn" class="btn ghost">Audio Mode</button>
+        <button id="videoModeBtn" class="btn ghost">Video Mode</button>
+      </div>
+    </main>
+
+    <!-- Right: Information Panel -->
+    <aside id="infoPanel">
+      <h2>Site Info</h2>
+      <p>Active: <span id="activeCount">0</span></p>
+      <p>Visitors: <span id="visitorCount">0</span></p>
+      <p>Latency: <span id="latency">0</span> ms</p>
+      <p id="statusText">Status: <span id="statusValue">Disconnected</span></p>
+    </aside>
+  </div>
+
+  <!-- Vendor scripts for Audio Mode background -->
+  <script src="three.r134.min.js"></script>
+  <script src="vanta.waves.min.js"></script>
+
+  <!-- App script -->
+  <script src="script.js"></script>
+</body>
+</html>
