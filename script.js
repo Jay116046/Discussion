@@ -29,13 +29,13 @@ const latencyEl = document.getElementById('latency');
 const statusValue = document.getElementById('statusValue');
 
 // WebSocket URL
-const WS_URL = 'wss://PRINC3-Discussion.hf.space/ws';
+const WS_URL = 'wss://PR1NC3-Discussion.hf.space/ws';
 // For production: const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 
 // Fetch ICE servers from /config
 async function getIceServers() {
   try {
-    const response = await fetch('https://huggingface.co/spaces/PR1NC3/Discussion/config', { mode: 'cors' });
+    const response = await fetch('https://PR1NC3-Discussion.hf.space/config', { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -265,7 +265,7 @@ function toggleAudioMode() {
 // Stats and latency
 async function updateStats() {
   try {
-    const response = await fetch('wss://PRINC3-Discussion.hf.space/stats', { mode: 'cors' });
+    const response = await fetch('https://PR1NC3-Discussion.hf.space/stats', { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -279,7 +279,11 @@ async function updateStats() {
   }
 }
 
-setInterval(updateStats, 5000);
+// Ensure setInterval runs after DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+  setInterval(updateStats, 5000);
+  updateStats(); // Call immediately to avoid initial delay
+});
 
 function sendPing() {
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -313,4 +317,5 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   loginModal.classList.remove('hidden');
   updateStats();
+
 });
