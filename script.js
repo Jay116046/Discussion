@@ -32,6 +32,10 @@ const statusValue = document.getElementById('statusValue');
 const WS_URL = ws;
 // For production: const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 
+console.log(process.env.config);
+console.log(process.env.ws);
+console.log(process.env.stats);
+
 // Fetch ICE servers from /config
 async function getIceServers() {
   try {
@@ -319,4 +323,5 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
 
 });
+
 
