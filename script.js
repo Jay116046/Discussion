@@ -28,14 +28,19 @@ const visitorCount = document.getElementById('visitorCount');
 const latencyEl = document.getElementById('latency');
 const statusValue = document.getElementById('statusValue');
 
+//inporting var from .env
+const config = import.meta.env.config;
+const stats = import.meta.env.stats;
+const ws = import.meta.env.ws;
+
 // WebSocket URL
-const WS_URL = .env.ws;
+const WS_URL = ws;
 // For production: const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 
 // Fetch ICE servers from /config
 async function getIceServers() {
   try {
-    const response = await fetch(.env.config, { mode: 'cors' });
+    const response = await fetch(config, { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -265,7 +270,7 @@ function toggleAudioMode() {
 // Stats and latency
 async function updateStats() {
   try {
-    const response = await fetch(.env.stats, { mode: 'cors' });
+    const response = await fetch(stats, { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -319,6 +324,3 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
 
 });
-
-
-
