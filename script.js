@@ -34,13 +34,13 @@ const stats = import.meta.env.stats;
 const ws = import.meta.env.ws;
 
 // WebSocket URL
-const WS_URL = ws;
+const WS_URL = 'wss://PR1NC3-Discussion.hf.space/ws';
 // For production: const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
 
 // Fetch ICE servers from /config
 async function getIceServers() {
   try {
-    const response = await fetch(config, { mode: 'cors' });
+    const response = await fetch('https://PR1NC3-Discussion.hf.space/config', { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -270,7 +270,7 @@ function toggleAudioMode() {
 // Stats and latency
 async function updateStats() {
   try {
-    const response = await fetch(stats, { mode: 'cors' });
+    const response = await fetch('https://PR1NC3-Discussion.hf.space/stats', { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -324,3 +324,4 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
 
 });
+
