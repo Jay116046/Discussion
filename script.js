@@ -28,11 +28,6 @@ const visitorCount = document.getElementById('visitorCount');
 const latencyEl = document.getElementById('latency');
 const statusValue = document.getElementById('statusValue');
 
-//inporting var from .env
-const config = import.meta.env.config;
-const stats = import.meta.env.stats;
-const ws = import.meta.env.ws;
-
 // WebSocket URL
 const WS_URL = 'wss://PR1NC3-Discussion.hf.space/ws';
 // For production: const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
@@ -324,4 +319,5 @@ document.addEventListener('DOMContentLoaded', () => {
   updateStats();
 
 });
+
 
