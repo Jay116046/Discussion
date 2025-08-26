@@ -1,58 +1,249 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>RTC Live — 1:1 Calls</title>
-  <link rel="stylesheet" href="styles.css"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NeoCall — Next-Gen Video Communication</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
+
 <body>
+  <!-- Animated Background -->
+  <div id="particles-bg"></div>
+
   <!-- Login Modal -->
   <div id="loginModal" class="modal">
-    <div class="modal-content">
-      <h2>Choose a username</h2>
-      <input id="usernameInput" type="text" placeholder="Enter a unique username" maxlength="20"/>
-      <button id="joinBtn" class="btn primary joinBtn">Join</button>
+    <div class="modal-content glass">
+      <div class="modal-header">
+        <div class="logo-container">
+          <i class="fas fa-satellite-dish"></i>
+          <h1>NeoCall</h1>
+        </div>
+        <p class="tagline">Experience the future of communication</p>
+      </div>
+
+      <div class="input-group">
+        <div class="input-wrapper">
+          <i class="fas fa-user-astronaut"></i>
+          <input id="usernameInput" type="text" placeholder="Enter your cosmic username" maxlength="20" />
+          <div class="input-line"></div>
+        </div>
+      </div>
+
+      <button id="joinBtn" class="btn primary joinBtn">
+        <span class="btn-text">Launch into Orbit</span>
+        <div class="btn-glow"></div>
+      </button>
+
       <p id="loginError" class="error"></p>
+
+      <div class="modal-footer">
+        <div class="feature-list">
+          <div class="feature-item">
+            <i class="fas fa-shield-alt"></i>
+            <span>Secure & Private</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-bolt"></i>
+            <span>Lightning Fast</span>
+          </div>
+          <div class="feature-item">
+            <i class="fas fa-globe"></i>
+            <span>Global Reach</span>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
   <!-- Main Layout -->
   <div class="container">
     <!-- Left: User List Panel -->
-    <aside id="userPanel">
-      <h2>Active Users</h2>
-      <ul id="userList"></ul>
+    <aside id="userPanel" class="glass">
+      <div class="panel-header">
+        <h2><i class="fas fa-users"></i> Active Cosmonauts</h2>
+        <div class="online-indicator">
+          <span class="pulse"></span>
+          <span class="count" id="activeCount">0</span>
+        </div>
+      </div>
+
+      <div class="search-container">
+        <div class="search-wrapper">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search users..." id="userSearch" />
+        </div>
+      </div>
+
+      <div class="user-list-container">
+        <ul id="userList"></ul>
+      </div>
     </aside>
 
     <!-- Center: Call Area -->
     <main id="callArea">
-      <h2>Call Area</h2>
+      <div class="call-header">
+        <div class="call-status">
+          <div class="status-indicator" id="statusIndicator">
+            <span class="status-dot"></span>
+            <span class="status-text" id="statusValue">Ready to Launch</span>
+          </div>
+        </div>
+
+        <div class="call-info">
+          <h3 id="callTitle">NeoCall Hub</h3>
+          <p id="callSubtitle">Select a user to begin your journey</p>
+        </div>
+      </div>
 
       <!-- Video region -->
-      <div id="videoRegion">
+      <!-- <div id="videoRegion">
         <video id="localVideo" autoplay muted playsinline></video>
         <video id="remoteVideo" autoplay playsinline></video>
+      </div> -->
+      <div id="videoRegion">
+        <div class="video-container local">
+          <video id="localVideo" autoplay muted playsinline></video>
+          <div class="video-overlay">
+            <div class="user-info">
+              <i class="fas fa-user-circle"></i>
+              <span id="localUsername">You</span>
+            </div>
+            <div class="video-stats">
+              <span class="stat"><i class="fas fa-signal"></i> <span id="localBitrate">0</span> kbps</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="video-container remote">
+          <video id="remoteVideo" autoplay playsinline></video>
+          <div class="video-overlay">
+            <div class="user-info">
+              <i class="fas fa-user-circle"></i>
+              <span id="remoteUsername">Remote User</span>
+            </div>
+            <div class="video-stats">
+              <span class="stat"><i class="fas fa-signal"></i> <span id="remoteBitrate">0</span> kbps</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Control Bar -->
-      <div id="controls">
-        <button id="endCallBtn" class="btn end">End Call</button>
-        <button id="muteBtn" class="btn mute">Mute</button>
-        <button id="speakerBtn" class="btn speaker">Speaker</button>
-        <button id="audioModeBtn" class="btn ghost">Audio Mode</button>
-        <button id="videoModeBtn" class="btn ghost">Video Mode</button>
+      <div id="controls" class="glass">
+        <div class="control-group primary">
+          <button id="endCallBtn" class="btn end" title="End Call">
+            <i class="fas fa-phone-slash"></i>
+          </button>
+        </div>
+
+        <div class="control-group secondary">
+          <button id="muteBtn" class="btn mute" title="Mute">
+            <i class="fas fa-microphone"></i>
+          </button>
+          <button id="speakerBtn" class="btn speaker" title="Speaker">
+            <i class="fas fa-volume-up"></i>
+          </button>
+        </div>
+
+        <div class="control-group tertiary">
+          <button id="audioModeBtn" class="btn ghost" title="Audio Mode">
+            <i class="fas fa-headphones"></i>
+          </button>
+          <button id="videoModeBtn" class="btn ghost" title="Video Mode">
+            <i class="fas fa-video"></i>
+          </button>
+        </div>
       </div>
     </main>
 
     <!-- Right: Information Panel -->
-    <aside id="infoPanel">
-      <h2>Site Info</h2>
-      <p>Active: <span id="activeCount">0</span></p>
-      <p>Visitors: <span id="visitorCount">0</span></p>
-      <p>Latency: <span id="latency">0</span> ms</p>
-      <p id="statusText">Status: <span id="statusValue">Disconnected</span></p>
+    <aside id="infoPanel" class="glass">
+      <div class="panel-header">
+        <h2><i class="fas fa-chart-line"></i> Mission Control</h2>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-users"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="activeCount">0</span>
+            <span class="stat-label">Active Users</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-eye"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="visitorCount">0</span>
+            <span class="stat-label">Visitors</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-icon">
+            <i class="fas fa-tachometer-alt"></i>
+          </div>
+          <div class="stat-content">
+            <span class="stat-value" id="latency">0</span>
+            <span class="stat-label">Latency (ms)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="connection-status">
+        <h3>Connection Status</h3>
+        <div class="status-grid">
+          <div class="status-item">
+            <span class="status-label">WebSocket</span>
+            <span class="status-value" id="wsStatus">Disconnected</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Media</span>
+            <span class="status-value" id="mediaStatus">Inactive</span>
+          </div>
+          <div class="status-item">
+            <span class="status-label">Peer</span>
+            <span class="status-value" id="peerStatus">Disconnected</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="quick-actions">
+        <h3>Quick Actions</h3>
+        <div class="action-buttons">
+          <button class="action-btn" id="fullscreenBtn" title="Fullscreen">
+            <i class="fas fa-expand"></i>
+          </button>
+          <button class="action-btn" id="recordBtn" title="Record">
+            <i class="fas fa-record-vinyl"></i>
+          </button>
+          <button class="action-btn" id="screenshotBtn" title="Screenshot">
+            <i class="fas fa-camera"></i>
+          </button>
+        </div>
+      </div>
     </aside>
+  </div>
+
+  <!-- Notification System -->
+  <div id="notificationContainer"></div> 
+  <!-- Loading Spinner-->
+  <div id="loadingSpinner" class="hidden">
+    <div class="spinner">
+      <div class="orbit orbit-1"></div>
+      <div class="orbit orbit-2"></div>
+      <div class="orbit orbit-3"></div>
+    </div>
   </div>
 
   <!-- Vendor scripts for Audio Mode background -->
@@ -60,6 +251,7 @@
   <script src="vanta.waves.min.js"></script>
 
   <!-- App script -->
-  <script src="script.js"></script>
+  <script src="script2.js"></script>
 </body>
+
 </html>

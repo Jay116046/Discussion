@@ -9,6 +9,7 @@ let isMuted = false;
 let isSpeakerOff = false;
 let isAudioMode = false;
 let vantaEffect = null;
+let notificationTimeout = null;
 
 // DOM elements
 const loginModal = document.getElementById('loginModal');
@@ -16,6 +17,7 @@ const usernameInput = document.getElementById('usernameInput');
 const joinBtn = document.getElementById('joinBtn');
 const loginError = document.getElementById('loginError');
 const userList = document.getElementById('userList');
+const userSearch = document.getElementById('userSearch');
 const localVideo = document.getElementById('localVideo');
 const remoteVideo = document.getElementById('remoteVideo');
 const endCallBtn = document.getElementById('endCallBtn');
@@ -27,15 +29,146 @@ const activeCount = document.getElementById('activeCount');
 const visitorCount = document.getElementById('visitorCount');
 const latencyEl = document.getElementById('latency');
 const statusValue = document.getElementById('statusValue');
+const callTitle = document.getElementById('callTitle');
+const callSubtitle = document.getElementById('callSubtitle');
+const localUsername = document.getElementById('localUsername');
+const remoteUsername = document.getElementById('remoteUsername');
+const localBitrate = document.getElementById('localBitrate');
+const remoteBitrate = document.getElementById('remoteBitrate');
+const wsStatus = document.getElementById('wsStatus');
+const mediaStatus = document.getElementById('mediaStatus');
+const peerStatus = document.getElementById('peerStatus');
+const fullscreenBtn = document.getElementById('fullscreenBtn');
+const recordBtn = document.getElementById('recordBtn');
+const screenshotBtn = document.getElementById('screenshotBtn');
+const loadingSpinner = document.getElementById('loadingSpinner');
 
 // WebSocket URL
-const WS_URL = 'wss://PR1NC3-Discussion.hf.space/ws';
-// For production: const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+// const WS_URL = (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host + '/ws';
+const WS_URL = 'wss://PR1NC3-Discussion.hf.space/ws'; 
+
+// ===== NOTIFICATION SYSTEM =====
+function showNotification(message, type = 'info', duration = 5000) {
+  const notificationContainer = document.getElementById('notificationContainer');
+
+  // Clear existing notifications
+  if (notificationTimeout) {
+    clearTimeout(notificationTimeout);
+  }
+  notificationContainer.innerHTML = '';
+
+  const notification = document.createElement('div');
+  notification.className = `notification ${type}`;
+  notification.textContent = message;
+
+  notificationContainer.appendChild(notification);
+
+  // Auto-remove notification
+  notificationTimeout = setTimeout(() => {
+    notification.remove();
+  }, duration);
+
+  return notification;
+}
+
+// ===== LOADING SPINNER =====
+function showLoading() {
+  if (loadingSpinner) {
+    loadingSpinner.classList.remove('hidden');
+  }
+}
+
+function hideLoading() {
+  if (loadingSpinner) {
+    loadingSpinner.classList.add('hidden');
+  }
+}
+
+// ===== SEARCH FUNCTIONALITY =====
+function filterUsers(searchTerm) {
+  const userItems = userList.querySelectorAll('.user-item');
+  userItems.forEach(item => {
+    const username = item.querySelector('span').textContent.toLowerCase();
+    if (username.includes(searchTerm.toLowerCase())) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+}
+
+if (userSearch) {
+  userSearch.addEventListener('input', (e) => {
+    filterUsers(e.target.value);
+  });
+}
+
+// ===== STATUS UPDATES =====
+function updateStatus(type, status, message) {
+  switch (type) {
+    case 'websocket':
+      wsStatus.textContent = status;
+      wsStatus.style.color = status === 'Connected' ? 'var(--success)' : 'var(--danger)';
+      break;
+    case 'media':
+      mediaStatus.textContent = status;
+      mediaStatus.style.color = status === 'Active' ? 'var(--success)' : 'var(--warning)';
+      break;
+    case 'peer':
+      peerStatus.textContent = status;
+      peerStatus.style.color = status === 'Connected' ? 'var(--success)' : 'var(--danger)';
+      break;
+    case 'call':
+      statusValue.textContent = message;
+      break;
+  }
+}
+
+// ===== QUICK ACTIONS =====
+if (fullscreenBtn) {
+  fullscreenBtn.addEventListener('click', () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen();
+      showNotification('Entered fullscreen mode', 'success');
+    } else {
+      document.exitFullscreen();
+      showNotification('Exited fullscreen mode', 'info');
+    }
+  });
+}
+
+if (recordBtn) {
+  recordBtn.addEventListener('click', () => {
+    showNotification('Recording feature coming soon!', 'info');
+  });
+}
+
+if (screenshotBtn) {
+  screenshotBtn.addEventListener('click', () => {
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    if (remoteVideo.srcObject && remoteVideo.videoWidth > 0) {
+      canvas.width = remoteVideo.videoWidth;
+      canvas.height = remoteVideo.videoHeight;
+      context.drawImage(remoteVideo, 0, 0);
+
+      const link = document.createElement('a');
+      link.download = `screenshot-${Date.now()}.png`;
+      link.href = canvas.toDataURL();
+      link.click();
+
+      showNotification('Screenshot saved!', 'success');
+    } else {
+      showNotification('No video to capture', 'warning');
+    }
+  });
+}
 
 // Fetch ICE servers from /config
 async function getIceServers() {
   try {
-    const response = await fetch('https://PR1NC3-Discussion.hf.space/config', { mode: 'cors' });
+    const response = await fetch('https://PR1NC3-Discussion.hf.space/config' , { mode: 'cors' });
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -48,22 +181,35 @@ async function getIceServers() {
 }
 
 // Initialize WebSocket
-function initWebSocket() {
+function initWebSocket(usernameToJoin) {
   console.log('Initializing WebSocket with URL:', WS_URL);
   ws = new WebSocket(WS_URL);
+
   ws.onopen = () => {
     console.log('WebSocket connected');
-    statusValue.textContent = 'Connected';
+    updateStatus('websocket', 'Connected');
+    updateStatus('call', 'Ready to Launch');
+    showNotification('Connected to server', 'success');
+    ws.send(JSON.stringify({ type: 'join', username: usernameToJoin }));
   };
+
   ws.onclose = () => {
     console.log('WebSocket disconnected');
-    statusValue.textContent = 'Disconnected';
+    hideLoading();
+    updateStatus('websocket', 'Disconnected');
+    updateStatus('call', 'Connection Lost');
     loginError.textContent = 'Disconnected from server';
+    showNotification('Disconnected from server', 'error');
   };
+
   ws.onerror = (error) => {
     console.error('WebSocket error:', error);
+    hideLoading();
+    updateStatus('websocket', 'Error');
     loginError.textContent = 'Failed to connect to server';
+    showNotification('Connection failed', 'error');
   };
+
   ws.onmessage = handleMessage;
 }
 
@@ -72,10 +218,12 @@ async function handleMessage(event) {
   try {
     const data = JSON.parse(event.data);
     console.log('Received WS message:', data);
+
     if (!data.type) {
       console.warn('Message missing type:', data);
       return;
     }
+
     switch (data.type) {
       case 'join_ok':
         username = data.username;
@@ -83,37 +231,52 @@ async function handleMessage(event) {
         loginModal.classList.add('hidden');
         loginError.textContent = '';
         updateUserList(data.users);
+        localUsername.textContent = username;
+        showNotification(`Welcome, ${username}!`, 'success');
         break;
+
       case 'join_error':
         loginError.textContent = data.reason;
+        showNotification(data.reason, 'error');
         break;
+
       case 'user_list':
         updateUserList(data.users);
         break;
+
       case 'call_request':
         currentCallTarget = data.from;
+        showNotification(`Incoming call from ${data.from}`, 'info');
         await startCall(false); // false indicates callee
         break;
+
       case 'call_reject':
-        alert(`Call rejected by ${data.from}: ${data.reason}`);
+        showNotification(`Call rejected by ${data.from}: ${data.reason}`, 'warning');
         resetCall();
         break;
+
       case 'offer':
         await handleOffer(data);
         break;
+
       case 'answer':
         await handleAnswer(data);
         break;
+
       case 'ice':
         await handleIceCandidate(data.candidate);
         break;
+
       case 'end':
+        showNotification('Call ended', 'info');
         resetCall();
         break;
+
       case 'pong':
         const rtt = Date.now() - data.ts;
         latencyEl.textContent = rtt;
         break;
+
       default:
         console.warn('Unknown message type:', data.type);
     }
@@ -127,22 +290,32 @@ function updateUserList(users) {
   userList.innerHTML = '';
   users.forEach(user => {
     if (user === username) return; // Don't show self
+
     const li = document.createElement('li');
     li.className = 'user-item';
-    li.innerHTML = `<span>${user}</span><span class="dot"></span>`;
+    li.innerHTML = `
+      <span>${user}</span>
+      <span class="dot"></span>
+    `;
     li.onclick = () => initiateCall(user);
     userList.appendChild(li);
   });
-  activeCount.textContent = users.length;
+
+  const activeCountElements = document.querySelectorAll('.active-count');
+  activeCountElements.forEach(el => {
+    el.textContent = users.length;
+  });
 }
 
 // Initiate call
 async function initiateCall(target) {
   if (target === username) {
-    alert('Cannot call yourself');
+    showNotification('Cannot call yourself', 'warning');
     return;
   }
+
   currentCallTarget = target;
+  showNotification(`Calling ${target}...`, 'info');
   ws.send(JSON.stringify({ type: 'call_request', from: username, to: target }));
   await startCall(true); // true indicates caller
 }
@@ -150,11 +323,23 @@ async function initiateCall(target) {
 // Start call (get media, setup peer)
 async function startCall(isCaller) {
   try {
-    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+    showLoading();
+    updateStatus('media', 'Initializing...');
+
+    const mediaConstraints = {
+      video: !isAudioMode,
+      audio: true
+    };
+    localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
     localVideo.srcObject = localStream;
+
+    console.log(localStream);
+    
+    updateStatus('media', 'Active');
 
     const iceServers = await getIceServers();
     peerConnection = new RTCPeerConnection({ iceServers });
+    updateStatus('peer', 'Connecting...');
 
     localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
 
@@ -162,6 +347,8 @@ async function startCall(isCaller) {
       if (!remoteStream) remoteStream = new MediaStream();
       remoteStream.addTrack(event.track);
       remoteVideo.srcObject = remoteStream;
+      updateStatus('peer', 'Connected');
+      hideLoading();
     };
 
     peerConnection.onicecandidate = event => {
@@ -176,24 +363,41 @@ async function startCall(isCaller) {
       ws.send(JSON.stringify({ type: 'offer', from: username, to: currentCallTarget, sdp: offer }));
     }
 
-    statusValue.textContent = 'In Call';
+    updateStatus('call', 'In Call');
+    callTitle.textContent = `Call with ${currentCallTarget}`;
+    callSubtitle.textContent = 'Connection established';
+    remoteUsername.textContent = currentCallTarget;
+
+    showNotification(`Call started with ${currentCallTarget}`, 'success');
+
   } catch (err) {
     console.error('Error starting call:', err);
+    hideLoading();
+    showNotification('Failed to start call', 'error');
     resetCall();
   }
 }
 
 // Handle incoming offer
 async function handleOffer(data) {
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
-  const answer = await peerConnection.createAnswer();
-  await peerConnection.setLocalDescription(answer);
-  ws.send(JSON.stringify({ type: 'answer', from: username, to: data.from, sdp: answer }));
+  try {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+    const answer = await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    ws.send(JSON.stringify({ type: 'answer', from: username, to: data.from, sdp: answer }));
+  } catch (err) {
+    console.error('Error handling offer:', err);
+    showNotification('Failed to accept call', 'error');
+  }
 }
 
 // Handle incoming answer
 async function handleAnswer(data) {
-  await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+  try {
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+  } catch (err) {
+    console.error('Error handling answer:', err);
+  }
 }
 
 // Handle ICE candidate
@@ -209,42 +413,70 @@ async function handleIceCandidate(candidate) {
 function resetCall() {
   if (peerConnection) peerConnection.close();
   peerConnection = null;
+
   if (localStream) localStream.getTracks().forEach(track => track.stop());
   localStream = null;
   remoteStream = null;
+
   localVideo.srcObject = null;
   remoteVideo.srcObject = null;
   currentCallTarget = null;
-  statusValue.textContent = 'Disconnected';
+
+  updateStatus('call', 'Ready to Launch');
+  updateStatus('media', 'Inactive');
+  updateStatus('peer', 'Disconnected');
+
+  callTitle.textContent = 'NeoCall Hub';
+  callSubtitle.textContent = 'Select a user to begin your journey';
+  remoteUsername.textContent = 'Remote User';
+
   if (isAudioMode) toggleAudioMode();
 }
 
 // Controls
-endCallBtn.onclick = () => {
+if (endCallBtn) endCallBtn.onclick = () => {
   if (currentCallTarget) {
     ws.send(JSON.stringify({ type: 'end', from: username, to: currentCallTarget }));
   }
   resetCall();
+  showNotification('Call ended', 'info');
 };
 
-muteBtn.onclick = () => {
+if (muteBtn) muteBtn.onclick = () => {
   isMuted = !isMuted;
-  if (localStream) localStream.getAudioTracks()[0].enabled = !isMuted;
-  muteBtn.textContent = isMuted ? 'Unmute' : 'Mute';
+  if (localStream && localStream.getAudioTracks().length > 0) localStream.getAudioTracks()[0].enabled = !isMuted;
+
+  const icon = muteBtn.querySelector('i');
+  if (isMuted) {
+    icon.className = 'fas fa-microphone-slash';
+    showNotification('Microphone muted', 'info');
+  } else {
+    icon.className = 'fas fa-microphone';
+    showNotification('Microphone unmuted', 'info');
+  }
 };
 
-speakerBtn.onclick = () => {
+if (speakerBtn) speakerBtn.onclick = () => {
   isSpeakerOff = !isSpeakerOff;
-  remoteVideo.muted = isSpeakerOff;
-  speakerBtn.textContent = isSpeakerOff ? 'Quiet' : 'Speaker';
+  if (remoteVideo) remoteVideo.muted = isSpeakerOff;
+
+  const icon = speakerBtn.querySelector('i');
+  if (isSpeakerOff) {
+    icon.className = 'fas fa-volume-mute';
+    showNotification('Speaker off', 'info');
+  } else {
+    icon.className = 'fas fa-volume-up';
+    showNotification('Speaker on', 'info');
+  }
 };
 
-audioModeBtn.onclick = toggleAudioMode;
-videoModeBtn.onclick = toggleAudioMode;
+if (audioModeBtn) audioModeBtn.onclick = toggleAudioMode;
+if (videoModeBtn) videoModeBtn.onclick = toggleAudioMode;
 
 function toggleAudioMode() {
   isAudioMode = !isAudioMode;
   document.body.classList.toggle('audio-mode', isAudioMode);
+
   if (isAudioMode) {
     vantaEffect = VANTA.WAVES({
       el: "#callArea",
@@ -256,9 +488,11 @@ function toggleAudioMode() {
       scale: 1.00,
       scaleMobile: 1.00
     });
+    showNotification('Switched to audio mode', 'info');
   } else if (vantaEffect) {
     vantaEffect.destroy();
     vantaEffect = null;
+    showNotification('Switched to video mode', 'info');
   }
 }
 
@@ -270,20 +504,24 @@ async function updateStats() {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const stats = await response.json();
-    activeCount.textContent = stats.activeCount;
-    visitorCount.textContent = stats.visitorCount;
+
+    const activeCountElements = document.querySelectorAll('.active-count');
+    activeCountElements.forEach(el => {
+      el.textContent = stats.activeCount;
+    });
+
+    if (visitorCount) visitorCount.textContent = stats.visitorCount;
   } catch (err) {
     console.error('Error fetching stats:', err);
-    activeCount.textContent = activeCount.textContent || '0';
-    visitorCount.textContent = visitorCount.textContent || '0';
+    const activeCountElements = document.querySelectorAll('.active-count');
+    activeCountElements.forEach(el => {
+      el.textContent = el.textContent || '0';
+    });
+    if (visitorCount) visitorCount.textContent = visitorCount.textContent || '0';
   }
 }
 
-// Ensure setInterval runs after DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-  setInterval(updateStats, 5000);
-  updateStats(); // Call immediately to avoid initial delay
-});
+setInterval(updateStats, 5000);
 
 function sendPing() {
   if (ws && ws.readyState === WebSocket.OPEN) {
@@ -295,29 +533,37 @@ setInterval(sendPing, 5000);
 // Initialize after DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   console.log('DOM loaded, joinBtn:', joinBtn || 'Not found');
-  console.log('Join button event listener attached:', joinBtn || 'Not found');
+
   if (!joinBtn) {
     console.error('Error: joinBtn element not found');
     return;
   }
+
   joinBtn.onclick = () => {
     console.log('Join button clicked');
     const input = usernameInput.value.trim();
+
     if (input) {
       loginError.textContent = 'Connecting...';
-      initWebSocket();
-      ws.onopen = () => {
-        console.log('WebSocket connected');
-        ws.send(JSON.stringify({ type: 'join', username: input }));
-        loginError.textContent = '';
-      };
+      initWebSocket(input);
     } else {
       loginError.textContent = 'Username required';
+      showNotification('Please enter a username', 'warning');
     }
   };
+
+  usernameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      joinBtn.click();
+    }
+  });
+
   loginModal.classList.remove('hidden');
   updateStats();
 
+  updateStatus('websocket', 'Disconnected');
+  updateStatus('media', 'Inactive');
+  updateStatus('peer', 'Disconnected');
+
+  showNotification('Welcome to NeoCall!', 'info');
 });
-
-
